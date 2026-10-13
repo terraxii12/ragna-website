@@ -358,3 +358,10 @@ body.scrolled .site-header { background: rgba(10, 8, 7, 0.78); backdrop-filter: 
 
 /* Lange Teilnamen in der Kapitelliste */
 .log .era { max-width: 9rem; text-align: right; line-height: 1.35; }
+
+/* Rechtliche Seiten */
+.legal h2 { font-size: 1.1rem; margin: 1.6rem 0 .4rem; }
+.legal h2:first-child { margin-top: 0; }
+.back { text-align: center; margin: 2rem 0 1rem; }
+.legal-links { font-size: .85rem; margin-top: .4rem; }
+.legal-links a { color: var(--gold); }
