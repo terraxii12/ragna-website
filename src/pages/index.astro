@@ -1,0 +1,75 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import { SITE } from '../config';
+
+const chapters = (await getCollection('chapters', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.number - b.data.number
+);
+const first = chapters[0];
+
+// Glutfunken im Hero (rein dekorativ)
+const embers = Array.from({ length: 22 }, (_, i) => ({
+  left: (i * 47 + 11) % 100,
+  delay: (i * 0.9) % 10,
+  dur: 7 + ((i * 1.7) % 7),
+  size: 2 + (i % 3),
+}));
+---
+<Base home>
+  <section class="hero">
+    <div class="hero-bg" aria-hidden="true">
+      <img
+        src="/images/helden.webp"
+        srcset="/images/helden-800.webp 800w, /images/helden.webp 1536w"
+        sizes="100vw"
+        alt=""
+      />
+    </div>
+    <div class="flash" aria-hidden="true"></div>
+    <div class="embers" aria-hidden="true">
+      {embers.map((e) => (
+        <span style={`left:${e.left}%;--d:${e.delay}s;--t:${e.dur}s;--s:${e.size}px`} />
+      ))}
+    </div>
+    <div class="mist" aria-hidden="true"></div>
+    <svg class="bolt bolt-l" viewBox="0 0 120 400" aria-hidden="true">
+      <polyline points="70,0 45,110 80,120 35,250 68,258 30,400" />
+    </svg>
+    <svg class="bolt bolt-r" viewBox="0 0 120 400" aria-hidden="true">
+      <polyline points="50,0 78,100 42,112 85,240 52,250 90,400" />
+    </svg>
+
+    <div class="hero-inner">
+      <p class="eyebrow">Ein Fantasy-Roman</p>
+      <h1>{SITE.title}</h1>
+      <p class="tagline">{SITE.tagline}</p>
+      <div class="divider" aria-hidden="true"><span>◆</span></div>
+      {first && <a class="button" href={`/kapitel/${first.id}/`}>Die Reise beginnen</a>}
+    </div>
+  </section>
+
+  <section class="log" id="kapitel">
+    <div class="frame">
+      <h2 class="log-title">Kapitelverzeichnis</h2>
+      {chapters.length === 0 && <p class="muted">Noch keine Kapitel veröffentlicht.</p>}
+      <ol>
+        {chapters.map((c) => (
+          <li class="reveal" data-chapter-id={c.id}>
+            <a href={`/kapitel/${c.id}/`}>
+              <span class="medal">{c.data.interlude ? '✦' : c.data.number}</span>
+              <span class="info">
+                <span class="title">{c.data.title}</span>
+                {c.data.summary && <span class="summary">{c.data.summary}</span>}
+              </span>
+              <span class="meta">
+                <span class="era">{c.data.part}</span>
+                <span class="read-mark" title="Gelesen">✓</span>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+</Base>

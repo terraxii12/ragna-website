@@ -1,0 +1,147 @@
+---
+import '@fontsource/cinzel/600.css';
+import '@fontsource/eb-garamond/400.css';
+import '@fontsource/eb-garamond/400-italic.css';
+import '@fontsource/eb-garamond/600.css';
+import '../styles/global.css';
+import { SITE } from '../config';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  chapterId?: string;
+  home?: boolean;
+}
+const { title, description = SITE.description, image, chapterId, home = false } = Astro.props;
+const fullTitle = title ? `${title} · ${SITE.title}` : `${SITE.title} · ${SITE.tagline}`;
+---
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    {image && <meta property="og:image" content={image} />}
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{fullTitle}</title>
+  </head>
+  <body data-chapter={chapterId}>
+    {!home && (
+      <div class="bg-art" aria-hidden="true">
+        <img
+          src="/images/helden.webp"
+          srcset="/images/helden-800.webp 800w, /images/helden.webp 1536w"
+          sizes="100vw"
+          alt=""
+        />
+      </div>
+    )}
+    <div class="cursor-glow" aria-hidden="true"></div>
+    <div class="progress" id="progress" aria-hidden="true"></div>
+    <header class="site-header">
+      <a class="brand" href="/">{SITE.title}</a>
+      <nav><a href="/#kapitel">Kapitel</a></nav>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div class="ornament" aria-hidden="true">◆</div>
+      <p>{SITE.fanNotice}</p>
+    </footer>
+    <script is:inline>
+      (function () {
+        var bar = document.getElementById('progress');
+        var chapter = document.body.dataset.chapter;
+        var KEY = 'ragna-read';
+        function getRead() {
+          try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; }
+        }
+        function markRead(id) {
+          try {
+            var r = getRead();
+            if (r.indexOf(id) === -1) { r.push(id); localStorage.setItem(KEY, JSON.stringify(r)); }
+          } catch (e) {}
+        }
+        // Gelesen-Haken in der Kapitelliste
+        var read = getRead();
+        document.querySelectorAll('[data-chapter-id]').forEach(function (el) {
+          if (read.indexOf(el.dataset.chapterId) !== -1) el.classList.add('is-read');
+        });
+        // Lesefortschritt, Kopfzeile, als gelesen markieren
+        function update() {
+          var h = document.documentElement;
+          var max = h.scrollHeight - h.clientHeight;
+          var p = max > 0 ? h.scrollTop / max : 0;
+          bar.style.width = p * 100 + '%';
+          document.body.classList.toggle('scrolled', h.scrollTop > 24);
+          if (chapter && p > 0.92) markRead(chapter);
+        }
+        window.addEventListener('scroll', update, { passive: true });
+        update();
+        // Schriftgröße
+        var size = 1.2;
+        try { size = parseFloat(localStorage.getItem('ragna-size')) || 1.2; } catch (e) {}
+        function applySize() { document.documentElement.style.setProperty('--reader-size', size + 'rem'); }
+        applySize();
+        document.querySelectorAll('[data-size]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            size = Math.min(1.7, Math.max(0.95, size + (b.dataset.size === 'up' ? 0.1 : -0.1)));
+            applySize();
+            try { localStorage.setItem('ragna-size', String(size)); } catch (e) {}
+          });
+        });
+        // Einblenden beim Scrollen
+        var items = document.querySelectorAll('.reveal');
+        if ('IntersectionObserver' in window) {
+          var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+          }, { threshold: 0.1 });
+          items.forEach(function (el) { io.observe(el); });
+        } else {
+          items.forEach(function (el) { el.classList.add('in'); });
+        }
+      })();
+    </script>
+    <script is:inline>
+      // Eigener Cursor, Lichtschein, Funken und sanfte Parallax (nur Maus, nicht bei Touch)
+      (function () {
+        var fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+        if (!fine) return;
+        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var root = document.documentElement;
+        root.classList.add('has-cursor');
+        if (reduce) return;
+        var glow = document.querySelector('.cursor-glow');
+        var tx = 0, ty = 0, x = 0, y = 0, started = false, lx = 0, ly = 0;
+        function loop() {
+          x += (tx - x) * 0.14; y += (ty - y) * 0.14;
+          glow.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)';
+          requestAnimationFrame(loop);
+        }
+        function spawn(px, py) {
+          var s = document.createElement('span');
+          s.className = 'spark';
+          s.style.left = px + 'px'; s.style.top = py + 'px';
+          s.style.setProperty('--dx', (Math.random() * 30 - 15).toFixed(1) + 'px');
+          s.style.setProperty('--dy', (Math.random() * 26 + 6).toFixed(1) + 'px');
+          document.body.appendChild(s);
+          s.addEventListener('animationend', function () { s.remove(); });
+        }
+        window.addEventListener('mousemove', function (e) {
+          tx = e.clientX; ty = e.clientY;
+          if (!started) { started = true; x = tx; y = ty; glow.style.opacity = 1; requestAnimationFrame(loop); }
+          root.style.setProperty('--px', (e.clientX / window.innerWidth * 2 - 1).toFixed(3));
+          root.style.setProperty('--py', (e.clientY / window.innerHeight * 2 - 1).toFixed(3));
+          var dx = tx - lx, dy = ty - ly;
+          if (dx * dx + dy * dy > 1600) { lx = tx; ly = ty; if (!(e.target.closest && e.target.closest('.reader'))) spawn(tx, ty); }
+        }, { passive: true });
+        document.addEventListener('mouseleave', function () { glow.style.opacity = 0; });
+        document.addEventListener('mouseenter', function () { if (started) glow.style.opacity = 1; });
+      })();
+    </script>
+  </body>
+</html>
